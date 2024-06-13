@@ -1,0 +1,31 @@
+{
+  "consolidate_samples.dropped_read_groups": [
+    {
+      "left": "sample1",
+      "right": [
+        {
+          "left": "dummy_fastqs/sample1_R1.fastq",
+          "right": "dummy_fastqs/sample1_R2.fastq"
+        }
+      ]
+    },
+    {
+      "left": "sample2",
+      "right": [
+        {
+          "left": "dummy_fastqs/sample2_R1.fastq",
+          "right": "dummy_fastqs/sample2_R2.fastq"
+        }
+      ]
+    },
+    {
+      "left": "sample3",
+      "right": [
+        {
+          "left": "dummy_fastqs/sample3_R1.fastq",
+          "right": "dummy_fastqs/sample3_R2.fastq"
+        }
+      ]
+    }
+  ]
+}
