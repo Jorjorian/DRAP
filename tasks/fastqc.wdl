@@ -13,7 +13,7 @@ task fastqc {
         touch "~{tag}_~{read}_fastqc.zip"
         cp ~{fq} ~{tag}_~{read}.fastq.gz
         fastqc --threads ~{cpu} --nogroup --noextract --outdir . ~{tag}_~{read}.fastq.gz
-        # TBD: stats from fastqc
+
     >>>
     output {
         File html = "~{tag}_~{read}_fastqc.html"
