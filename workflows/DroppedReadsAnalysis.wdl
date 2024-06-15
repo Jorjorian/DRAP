@@ -16,6 +16,8 @@ workflow DRAP {
       Directory kraken_db
       File reference_fasta
       File multiqc_config
+      File primer_list
+      File adapter_list
   }
 
   call consolidate_samples.consolidate_samples as consolidate_samples {
@@ -61,7 +63,10 @@ workflow DRAP {
         input:
             fq_1 = group[1][0],
             fq_2 = group[1][1],
-            tag = group[0]
+            tag = group[0],
+            primer_list = primer_list,
+            adapter_list = adapter_list
+
     }
     call bwa.loose_mapping_metrics as loose_mapping {
         input:
