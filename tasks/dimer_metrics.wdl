@@ -11,28 +11,25 @@ task dimer_metrics {
 
     command <<<
         # Create a directory for output
-        mkdir -p ${tag}_output
+        mkdir -p ~{tag}_output
 
         # Run BBDuk to trim adapters and primers and get counts
         bbduk.sh \
-        in1=${fq_1} in2=${fq_2} \
-        ref=${adapter_list},${primer_list} \
-        ktrim=r k=23 mink=11 hdist=1 \
-        stats=${tag}_output/bbduk_stats.txt \
-        out1=${tag}_output/trimmed_1.fastq out2=${tag}_output/trimmed_2.fastq
+        in1=~{fq_1} in2=~{fq_2} \
+        ref=~{adapter_list},~{primer_list} \
+        stats=~{tag}_output/bbduk_stats.txt \
+        out1=~{tag}_output/filtered_1.fastq out2=${tag}_output/filtered_2.fastq
 
-        # Parse the BBDuk stats to extract dimer counts
-        awk 'BEGIN {FS="\t"}; NR>1 {print $1, $2}' ${tag}_output/bbduk_stats.txt > ${tag}_output/dimer_counts.txt
 
         # Convert dimer counts to JSON format
         python <<CODE
 import json
 
 dimer_counts = {}
-with open('${tag}_output/dimer_counts.txt') as f:
+with open("~{tag}_output/bbduk_stats.txt") as f:
 for line in f:
-    adapter, count = line.strip().split()
-    dimer_counts[adapter] = int(count)
+    adapter, count, perc = line.strip().split()
+    dimer_counts[adapter] = {"count": int(count), "percentage": float(perc)}
 
 with open('${tag}_dimer_metrics.json', 'w') as f:
     json.dump(dimer_counts, f, indent=4)

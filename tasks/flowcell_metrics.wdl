@@ -7,36 +7,41 @@ task flowcell_metrics {
         String tag
     }
     command <<<
-        pip install sklearn
+        source activate base
+        conda activate myenv
         python <<CODE
 import os
 import json
+import gzip
 from Bio import SeqIO
 import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
 import numpy as np
-
 def extract_xy(file):
     x_coords = []
     y_coords = []
-    for record in SeqIO.parse(file, "fastq"):
-        # Assuming the x, y coordinates are stored in the read name as 'x_y'
-        name = record.id
-        x, y = map(int, name.split(":")[-2:])
-        x_coords.append(x)
-        y_coords.append(y)
-return x_coords, y_coords
+    # Handle compressed fastq files
+    open_func = gzip.open if file.endswith('.gz') else open
+    with open_func(file, 'rt') as handle:
+        for record in SeqIO.parse(handle, "fastq"):
+            name = record.id
+            name = name.split(' ')[0]
+            x, y = map(int, name.split(":")[-2:])
+            x_coords.append(x)
+            y_coords.append(y)
+    return x_coords, y_coords
 
-def plot_xy(x_coords_1, y_coords_1, x_coords_2, y_coords_2, tag):
+def plot_xy(x_coords_1, y_coords_1, tag):
     plt.figure(figsize=(10, 6))
-    plt.scatter(x_coords_1, y_coords_1, s=1, alpha=0.5, label='Read 1')
-    plt.scatter(x_coords_2, y_coords_2, s=1, alpha=0.5, label='Read 2')
-    plt.title(tag + " - Combined Strand Distribution")
+    plt.scatter(x_coords_1, y_coords_1, s=.01, alpha=0.5, label='Read 1')
+    # save the plot
+    plt.title(tag + " - Strand 1 Distribution")
     plt.xlabel("X coordinate")
     plt.ylabel("Y coordinate")
     plt.legend()
-    plt.savefig(tag + "_combined_flowcell_distribution.png")
+    plt.savefig(tag + "_flowcell_distribution.png")
     plt.close()
+
 
 def cluster_and_plot(x_coords, y_coords, tag):
     coords = np.column_stack((x_coords, y_coords))
@@ -52,7 +57,7 @@ def cluster_and_plot(x_coords, y_coords, tag):
             col = [0, 0, 0, 1]
         class_member_mask = (labels == k)
         xy = coords[class_member_mask]
-        plt.scatter(xy[:, 0], xy[:, 1], s=1, alpha=0.5, color=tuple(col))
+        plt.scatter(xy[:, 0], xy[:, 1], s=.001, alpha=0.5, color=tuple(col))
 
     plt.title(tag + " - Clustered Distribution")
     plt.xlabel("X coordinate")
@@ -81,20 +86,20 @@ x_coords_1, y_coords_1 = extract_xy("~{fq_1}")
 x_coords_2, y_coords_2 = extract_xy("~{fq_2}")
 
 # Plot combined XY coordinates
-plot_xy(x_coords_1, y_coords_1, x_coords_2, y_coords_2, "~{tag}")
+plot_xy(x_coords_1, y_coords_1, "~{tag}")
 
 # Clustering and plotting
-all_x_coords = x_coords_1 + x_coords_2
-all_y_coords = y_coords_1 + y_coords_2
+all_x_coords = x_coords_1
+all_y_coords = y_coords_1
 cluster_and_plot(all_x_coords, all_y_coords, "~{tag}")
 CODE
         >>>
 output {
         File metrics = "~{tag}.flowcell_metrics.json"
-        File overall_png = glob("~{tag}_flowcell_distribution.png")
-        File clusters = glob("~{tag}_clusters.png")
+        File overall_png = "~{tag}_flowcell_distribution.png"
+        File clusters = "~{tag}_clusters.png"
     }
     runtime {
-        docker: "biopython/biopython"
+        docker: "docker.io/oblivious1/drap:flowcell"
     }
 }
