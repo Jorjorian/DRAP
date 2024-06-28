@@ -4,7 +4,7 @@ version 1.0
 task fastaIndex {
     input {
         File fasta
-        String docker = "gcr.io/clearlabs-science/janus_test"
+        String docker = ""
     }
     String bsname = basename(fasta)
     String prefix = sub(bsname, "\.[^.]+$", "")
