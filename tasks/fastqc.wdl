@@ -8,7 +8,6 @@ task fastqc {
         Int cpu = 3
     }
     command <<<
-        conda activate sorbet_env
         touch "~{tag}_~{read}_fastqc.html"
         touch "~{tag}_~{read}_fastqc.zip"
         cp ~{fq} ~{tag}_~{read}.fastq.gz

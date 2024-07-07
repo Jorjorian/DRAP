@@ -5,7 +5,7 @@ task dimer_metrics {
         File fq_1
         File fq_2
         File adapter_list
-        File primer_list
+        File? primer_list
         String tag
     }
 
@@ -16,7 +16,7 @@ task dimer_metrics {
         # Run BBDuk to trim adapters and primers and get counts
         bbduk.sh \
         in1=~{fq_1} in2=~{fq_2} \
-        ref=~{adapter_list},~{primer_list} \
+        ref=~{adapter_list} ~{', ' + primer_list} \
         stats=~{tag}_output/bbduk_stats.txt \
         out1=~{tag}_output/filtered_1.fastq out2=${tag}_output/filtered_2.fastq
 

@@ -7,11 +7,11 @@ task bwaMem {
         File fq2
         String tag
         String platform = "illumina"
-        Int cpu = 3
-        String docker = "gcr.io/clearlabs-science/janus_test"
+        Int cpu = 8
+        String docker = "docker.io/oblivious1/drap:bwa"
     }
     command <<<
-        source /opt/conda/etc/profile.d/conda.sh
+        source activate base
         conda activate bwa_env
         bwa mem -t ~{cpu} \
             -R "~{'@RG\\tID:' + tag + '\\tSM:' + tag + '\\tLB:' + tag + '\\tPL:' + platform}" \
@@ -44,29 +44,36 @@ task bamStat {
         String tag = ""
         Boolean empty = false
         Int read_counts = 0
+        String docker = "docker.io/oblivious1/drap:bwa"
     }
     String infix = if tag == "" then tag else "." + tag
-    String prefix = basename(bam[0], ".bam") + infix
     command <<<
-        conda activate sorbet_env
-
+        source activate base
+        conda activate bwa_env
         # Initialize variables for JSON data
         echo "{" > individual_data.json
-        samtools stats ~{bam[0]} > ~{prefix + ".stats"}
+        samtools stats ~{bam[0]} > ~{tag + ".stats"}
 
-        n_mapped_reads=$(grep 'reads mapped:' ~{prefix + ".stats"} | cut -f 3)
+        n_mapped_reads=$(grep 'reads mapped:' ~{tag + ".stats"} | cut -f 3)
+        total_reads=$(grep 'raw total sequences:' ~{tag + ".stats"} | cut -f 3)
+        error_rate=$(grep 'error rate:' ~{tag + ".stats"} | cut -f 3)
+        average_length=$(grep 'average length:' ~{tag + ".stats"} | cut -f 3)
+        echo $total_reads > total_reads
         echo $n_mapped_reads > mapped_reads
+        echo $total_reads > total_reads
+        echo $error_rate > error_rate
+        echo $average_length > average_length
         if [ ~{read_counts} -gt 0 ]; then
         mapping_rate=$(bc -l <<< "(100 * $n_mapped_reads / ( 2 * ~{read_counts})) ")
         echo $mapping_rate > mapping_rate
         else
-        awk -F"\t" '/^SN\treads mapped:/ {mapped=$3} /^SN\traw total sequences:/ {total=$3} END {print (mapped/total)*100}' ~{prefix + ".stats"} > mapping_rate
+        awk -F"\t" '/^SN\treads mapped:/ {mapped=$3} /^SN\traw total sequences:/ {total=$3} END {print (mapped/total)*100}' ~{tag + ".stats"} > mapping_rate
         fi
 
-        samtools depth -a ~{bam[0]} > ~{prefix + ".all.depth"}
+        samtools depth -a ~{bam[0]} > ~{tag + ".all.depth"}
 
-        sed -n '/^SN\tinsert size average:/{p;q}' ~{prefix + ".stats"} |cut -f3 > insert_size_mean
-        sed -n '/^SN\tinsert size standard deviation:/{p;q}' ~{prefix + ".stats"} |cut -f3 > insert_size_sd
+        sed -n '/^SN\tinsert size average:/{p;q}' ~{tag + ".stats"} |cut -f3 > insert_size_mean
+        sed -n '/^SN\tinsert size standard deviation:/{p;q}' ~{tag + ".stats"} |cut -f3 > insert_size_sd
 
         # Python script to calculate median insert size
         python <<CODE
@@ -96,25 +103,29 @@ task bamStat {
         o.write(str(median_insert_size))
         CODE
 
-        cat ~{prefix + ".all.depth"} |datamash median 3 > median_depth
-        cat ~{prefix + ".all.depth"} |datamash mean 3 > mean_depth
-
-        # Finalize JSON file
-        echo "\"average_bamstats\": {\"depth\": $(<mean_depth), \"median_depth\": $(<median_depth), \"insert_size_mean\": $(<insert_size_mean), \"insert_size_sd\": $(<insert_size_sd)}" >> individual_data.json
-        echo "}" >> individual_data.json
+        cat ~{tag + ".all.depth"} |datamash median 3 > median_depth
+        cat ~{tag + ".all.depth"} |datamash mean 3 > mean_depth
     >>>
     output {
         String sample = tag
-        File stats = prefix + ".stats"
-        File all_depth = prefix + ".all.depth"
+        File stats = tag + ".stats"
+        File all_depth = tag + ".all.depth"
         Float insert_size_mean = if size("insert_size_mean") > 1 then read_float("insert_size_mean") else -1.0
         Float insert_size_sd = if size("insert_size_sd") > 1 then read_float("insert_size_sd") else -1.0
         Float mapping_rate = if size("mapping_rate") > 1 then read_float("mapping_rate") else -1.0
         Float median_depth = if size("median_depth") > 1 then read_float("median_depth") else -1.0
         Float mean_depth = if size("mean_depth") > 1 then read_float("mean_depth") else -1.0
+        Float average_length = if size("average_length") > 1 then read_float("average_length") else -1.0
+        Float error_rate = if size("error_rate") > 1 then read_float("error_rate") else -1.0
+        Float n_mapped_reads = if size("mapped_reads") > 1 then read_float("mapped_reads") else -1.0
+        Float total_reads = if size("total_reads") > 1 then read_float("total_reads") else -1.0
         File bam_json_full = write_json({
                                             "tag": tag,
                                             "% Mapped Reads": mapping_rate,
+                                             "average_length": average_length,
+                                            "error_rate": error_rate,
+                                            "n_mapped_reads": n_mapped_reads,
+                                            "total_reads": total_reads,
                                             "insert_size_mean": insert_size_mean,
                                             "insert_size_sd": insert_size_sd,
                                             "median_depth": median_depth,
@@ -122,6 +133,10 @@ task bamStat {
                                         })
         File bam_json_empty = write_json({"tag": tag,
                                              "% Mapped Reads": -1,
+                                             "average_length": -1,
+                                             "error_rate": -1,
+                                             "n_mapped_reads": -1,
+                                             "total_reads": -1,
                                              "insert_size_mean": -1,
                                              "insert_size_sd": -1,
                                              "median_depth": -1,
@@ -131,7 +146,7 @@ task bamStat {
         File overall_json = 'individual_data.json'
     }
     runtime {
-        memory: "2 GB"
+        memory: "8 GB"
         docker: "~{docker}"
     }
 }
@@ -153,11 +168,12 @@ workflow loose_mapping_metrics {
     call bamStat {
         input:
             bam = bwaMem.bam,
-            tag = tag,
-            reference = ref
+            tag = tag
     }
     output {
         File bam_json = bamStat.bam_json
+        File stats = bamStat.stats
+        File depth = bamStat.all_depth
     }
 }
 

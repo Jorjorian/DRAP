@@ -16,7 +16,7 @@ workflow DRAP {
       Directory kraken_db
       File reference_fasta
       File multiqc_config
-      File primer_list
+      File? primer_list
       File adapter_list
   }
 
@@ -73,7 +73,7 @@ workflow DRAP {
             fq_1 = group[1][0],
             fq_2 = group[1][1],
             tag = group[0],
-            ref = ref.index
+            ref = ref.bwa_index
     }
 
 

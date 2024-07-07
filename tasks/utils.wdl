@@ -4,7 +4,7 @@ version 1.0
 task fastaIndex {
     input {
         File fasta
-        String docker = ""
+        String docker = "docker.io/oblivious1/drap:bwa"
     }
     String bsname = basename(fasta)
     String prefix = sub(bsname, "\.[^.]+$", "")
