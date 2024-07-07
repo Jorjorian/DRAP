@@ -5,11 +5,20 @@ task consolidate_samples {
         Array[Pair[String, Array[Pair[File, File]]]] dropped_read_groups
     }
 
+    # Convert the dropped_read_groups to a JSON string
+    File dropped_read_groups_json = write_json(dropped_read_groups)
+
     command <<<
         mkdir -p output_fastqs
-        for pair in ${write_lines(select_first([dropped_read_groups]))}; do
-        name=$(echo ${pair} | cut -d' ' -f1)
-        files=$(echo ${pair} | cut -d' ' -f2)
+
+        # Write the dropped_read_groups JSON string to a file safely
+        cp ~{dropped_read_groups_json} dropped_read_groups.json
+
+        # Process the JSON file to consolidate samples
+        jq -c '.[]' dropped_read_groups.json | while read pair; do
+        name=$(echo ${pair} | jq -r '.left')
+        files=$(echo ${pair} | jq -c '.right')
+
         R1_files=$(echo ${files} | jq -r '.[] | .left')
         R2_files=$(echo ${files} | jq -r '.[] | .right')
 
@@ -31,8 +40,11 @@ task consolidate_samples {
     }
 
     runtime {
-        docker: "ubuntu:latest"
+        docker: "docker.io/oblivious1/drap:bash"
         memory: "4G"
         cpu: 2
     }
 }
+
+
+

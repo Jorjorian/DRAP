@@ -1,8 +1,11 @@
 {
-  "fq_1": "/home/alex/Downloads/test_fastqs/raw_fastqs/SID0973_S137_R1_001.FS10002271.fastq.gz",
-  "fq_2": "/home/alex/Downloads/test_fastqs/raw_fastqs/SID0973_S137_R2_001.FS10002271.fastq.gz",
+  "fq1": "/home/alex/Downloads/test_fastqs/raw_fastqs/SID0973_S137_R1_001.FS10002271.fastq.gz",
+  "fq2": "/home/alex/Downloads/test_fastqs/raw_fastqs/SID0973_S137_R2_001.FS10002271.fastq.gz",
   "tag": "test",
-  "Kraken2_tar": "/home/alex/Downloads/k2_pluspf_16gb_20240605.tar.gz",
-  "docker": "docker.io/oblivious1/drap:kraken"
-
+  "ref": ["/home/alex/DataspellProjects/DRAP/Resources/SARS-CoV-2.reference.fasta",
+    "/home/alex/DataspellProjects/DRAP/Resources/SARS-CoV-2.reference.fasta.amb",
+    "/home/alex/DataspellProjects/DRAP/Resources/SARS-CoV-2.reference.fasta.ann",
+    "/home/alex/DataspellProjects/DRAP/Resources/SARS-CoV-2.reference.fasta.bwt",
+    "/home/alex/DataspellProjects/DRAP/Resources/SARS-CoV-2.reference.fasta.pac",
+    "/home/alex/DataspellProjects/DRAP/Resources/SARS-CoV-2.reference.fasta.sa"]
 }
