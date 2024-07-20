@@ -103,3 +103,118 @@ output {
         docker: "docker.io/oblivious1/drap:flowcell"
     }
 }
+
+task consolidate_flowcell_metrics {
+    input {
+        Array[File] flowcell_metrics_files
+    }
+
+    command <<<
+
+        python <<CODE
+import json
+import os
+
+# Initialize data structures
+consolidated_data = {
+}
+
+# Process each flowcell metrics file
+for metrics_file in "~{sep=' ' flowcell_metrics_files}".split(' '):
+    with open(metrics_file) as f:
+        metrics = json.load(f)
+    sample_name = os.path.basename(metrics_file).split('.')[0]
+    consolidated_data[sample_name] = {}
+    consolidated_data[sample_name]["n_clusters"] = metrics["n_clusters"]
+    consolidated_data[sample_name]["n_noise"]= metrics["n_noise"]
+    consolidated_data[sample_name]["avg_cluster_size"] = metrics["avg_cluster_size"]
+    # Prepare the MultiQC-compatible JSON format
+    multiqc_data = {
+        "id": "flowcell_metrics",
+        "section_name": "Flowcell Metrics",
+        "description": "Flowcell metrics from multiple samples.",
+        "plot_type": "table",
+        "pconfig": {
+            "id": "flowcell_metrics_table",
+            "title": "Flowcell Metrics",
+            'col1_header': "Read Group",
+        },
+        "data": consolidated_data
+        }
+
+        # Save the consolidated JSON
+with open('multiqc_flowcell_metrics_mqc.json', 'w') as f:
+    json.dump(multiqc_data, f, indent=4)
+CODE
+    >>>
+
+    output {
+        File multiqc_flowcell_metrics_json = "multiqc_flowcell_metrics_mqc.json"
+    }
+
+    runtime {
+        memory: "4 GB"
+        cpu: 2
+        docker: "python:3.8-slim"
+    }
+}
+
+
+task combine_images {
+    input {
+    Array[File] images
+    String output_image_name
+}
+
+command <<<
+    python <<CODE
+import math
+import matplotlib.pyplot as plt
+from PIL import Image
+
+def optimal_grid(n):
+    ncols = int(math.sqrt(n))
+    nrows = math.ceil(n / ncols)
+    return nrows, ncols
+
+def combine_images(image_files, output_image):
+    # Load images
+    images = [Image.open(img) for img in image_files]
+
+    # Determine grid size
+    n = len(images)
+    nrows, ncols = optimal_grid(n)
+
+    # Determine size of the combined image
+    widths, heights = zip(*(i.size for i in images))
+    max_width = max(widths)
+    max_height = max(heights)
+
+    # Create a blank canvas for the combined image
+    combined_image = Image.new('RGB', (ncols * max_width, nrows * max_height))
+
+    # Paste each image into the combined image
+    for idx, img in enumerate(images):
+        row = idx // ncols
+        col = idx % ncols
+        combined_image.paste(img, (col * max_width, row * max_height))
+
+    # Save the combined image
+    combined_image.save(output_image)
+
+    # Input images and output image name
+    image_files = "~{sep=' ' images}".split(' ')
+    output_image = "~{output_image_name}"
+
+    combine_images(image_files, output_image)
+    CODE
+>>>
+
+output {
+        File combined_image = "~{output_image_name}"
+        }
+
+runtime {
+  docker: "python:3.8-slim"
+  memory: "4 GB"}
+}

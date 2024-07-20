@@ -9,6 +9,8 @@ task consolidate_samples {
     File dropped_read_groups_json = write_json(dropped_read_groups)
 
     command <<<
+        set -e  # Exit on error
+
         mkdir -p output_fastqs
 
         # Write the dropped_read_groups JSON string to a file safely
@@ -19,20 +21,25 @@ task consolidate_samples {
         name=$(echo ${pair} | jq -r '.left')
         files=$(echo ${pair} | jq -c '.right')
 
-        R1_files=$(echo ${files} | jq -r '.[] | .left')
-        R2_files=$(echo ${files} | jq -r '.[] | .right')
+        # Extract R1 and R2 files
+        R1_files=$(echo ${files} | jq -r '.[] | .left' | tr '\n' ' ')
+        echo ${R1_files}
 
-        cat ${R1_files} > output_fastqs/${name}_R1.fastq
-        cat ${R2_files} > output_fastqs/${name}_R2.fastq
+        R2_files=$(echo ${files} | jq -r '.[] | .right' | tr '\n' ' ')
+        echo ${R2_files}
 
-        # Save the name and paths to the output files
+        # Concatenate the files into the output directory
+        cat ${R1_files} > output_fastqs/${name}_R1.fastq.gz
+        cat ${R2_files} > output_fastqs/${name}_R2.fastq.gz
+
+        # Save the name to the names.txt file
         echo "${name}" >> output_fastqs/names.txt
         done
     >>>
 
     output {
-        Array[File] R1_files = glob("output_fastqs/*_R1.fastq")
-        Array[File] R2_files = glob("output_fastqs/*_R2.fastq")
+        Array[File] R1_files = glob("output_fastqs/*_R1.fastq.gz")
+        Array[File] R2_files = glob("output_fastqs/*_R2.fastq.gz")
         Array[String] names = read_lines("output_fastqs/names.txt")
 
         Array[Pair[File, File]] fastq_pairs = zip(R1_files, R2_files)
