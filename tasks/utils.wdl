@@ -10,7 +10,8 @@ task fastaIndex {
     String prefix = sub(bsname, "\.[^.]+$", "")
 
     command <<<
-        conda activate sorbet_env
+        source activate base
+        conda activate bwa_env
         cp ~{fasta} ~{bsname}
         bwa index ~{bsname}
         samtools faidx ~{bsname}

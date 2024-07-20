@@ -13,7 +13,7 @@ workflow DRAP {
 
   input {
       Array[Pair[String, Array[Pair[File, File]]]] dropped_read_groups
-      Directory kraken_db
+      File kraken_tar
       File reference_fasta
       File multiqc_config
       File? primer_list
@@ -30,63 +30,74 @@ workflow DRAP {
     }
 
   ## scatter bcl2fastq processing
-  scatter(group in consolidate_samples.groups){
-      call contamination_blast.blast as blast {
+  scatter(group in consolidate_samples.output_fastq_pairs){
+#      call contamination_blast.blast as blast {
+#          input:
+#              read_group = group
+#          }
+      call kraken.runKraken as contamination_kraken {
           input:
-              read_group = group
-          }
-      call kraken.kraken as contamination_kraken {
-          input:
-              sample_id = group[0],
-              fq_1 = group[1][0],
-              fq_2 = group[1][1],
-              kraken_db = kraken_db
+              tag = group.left,
+              fq_1 = group.right.left,
+              fq_2 = group.right.right,
+              Kraken2_tar = kraken_tar
           }
     call fastqc.fastqc as r1_fastqc {
         input:
-            fq_1 = group[1][0],
-            tag = group[0]
-
+            fq = group.right.left,
+            tag = group.left,
+            read = '1'
     }
     call fastqc.fastqc as r2_fastqc {
         input:
-            fq_1 = group[1][1],
-            tag = group[0]
+            fq = group.right.right,
+            tag = group.left,
+            read = '2'
     }
     call flowcell_metrics.flowcell_metrics as flowcell_metrics {
         input:
-            fq_1 = group[1][0],
-            fq_2 = group[1][1],
-            tag = group[0]
+            fq_1 = group.right.left,
+            fq_2 = group.right.right,
+            tag = group.left
     }
     call dimer_metrics.dimer_metrics as dimer_metrics {
         input:
-            fq_1 = group[1][0],
-            fq_2 = group[1][1],
-            tag = group[0],
-            primer_list = primer_list,
+            fq_1 = group.right.left,
+            fq_2 = group.right.right,
+            tag = group.left,
             adapter_list = adapter_list
-
     }
+
     call bwa.loose_mapping_metrics as loose_mapping {
         input:
-            fq_1 = group[1][0],
-            fq_2 = group[1][1],
-            tag = group[0],
+            fq1 = group.right.left,
+            fq2 = group.right.right,
+            tag = group.left,
             ref = ref.bwa_index
     }
-
-
 }
+    call dimer_metrics.combine_dimer_metrics as combine_dimer_metrics {
+        input:
+            dimer_metrics_files = dimer_metrics.dimer_metrics_json
+    }
+    call flowcell_metrics.consolidate_flowcell_metrics as consolidate_flowcell_metrics {
+        input:
+            flowcell_metrics_files = flowcell_metrics.metrics
+    }
     call multiQC.multiQC as multiQC {
         input:
-            misc_files = [],
-            misc_file_arrays = [],
+            misc_file_arrays = [loose_mapping.stats, loose_mapping.bam_json, loose_mapping.depth,
+                                dimer_metrics.dimer_metrics_json, flowcell_metrics.metrics, flowcell_metrics.overall_png,
+                                flowcell_metrics.clusters, contamination_kraken.kraken_report,
+                                contamination_kraken.kraken_file, r1_fastqc.html, r1_fastqc.zip, r2_fastqc.html,
+                                r2_fastqc.zip],
+            misc_files = [consolidate_flowcell_metrics.multiqc_flowcell_metrics_json,
+                          combine_dimer_metrics.multiqc_dimer_metrics_json],
             name = 'multiqc',
             config_file = multiqc_config
     }
     output {
-#        File? metrics = process_samples.metrics
-        File final_report = multiQC.report
+        Array[File] stats = loose_mapping.stats
+        File multiqc_html = multiQC.report
       }
 }

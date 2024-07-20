@@ -1,0 +1,21 @@
+title: "Dropped Reads Analysis Reports"
+subtitle: "A breakdown of dropped reads across filtering steps"
+intro_text: "This report provides summary metrics about the reads filtered out at various steps of a given bioinformatics pipeline."
+
+custom_data:
+  flowcell_distribution:
+    section_name: "Flowcell Distributions"
+    description: "A visual representation of the distribution of reads across the flowcell"
+  flowcell_clusters:
+    section_name: "Flowcell Clusters"
+    description: "A visual representation of the read clusters across the flowcell"
+
+#sp:
+#  bbmap/stats:
+#    fn: "*.stats"
+sp:
+  flowcell_distribution:
+      fn: "*_flowcell_distribution.png"
+  flowcell_clusters:
+      fn: "*_clusters.png"
+ignore_images: false

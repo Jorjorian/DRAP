@@ -7,8 +7,7 @@ task runKraken {
     String tag
     File Kraken2_tar
     String kraken2_db = "kraken2_db"
-    String docker
-    Int memory = 8
+    Int memory = 31
     Int cpu = 4
   }
   command <<<
@@ -22,11 +21,11 @@ task runKraken {
         mkdir -p ~{kraken2_db}
     fi
     tar -xvf ~{Kraken2_tar} -C ~{kraken2_db}
-    kraken2 --db ~{kraken2_db} --threads ~{cpu} --output Kraken_output/~{tag}.kraken_output --report Kraken_output/~{tag}.kreport2 ~{fq_1} ~{fq_2}
+    kraken2 --db ~{kraken2_db} --threads ~{cpu} --output Kraken_output/~{tag}.kraken_output --report Kraken_output/~{tag}.txt ~{fq_1} ~{fq_2}
     cat Kraken_output/~{tag}.kraken_output | cut -f 2,3 > Kraken_output/krona_input.txt
     python3 <<CODE
     import json
-    with open("Kraken_output/~{tag}.kreport2") as infile:
+    with open("Kraken_output/~{tag}.txt") as infile:
         H = {"sample_index": "~{tag}"}
         for line in infile:
             line = line.strip().split()
@@ -51,7 +50,7 @@ task runKraken {
 
   >>>
   output {
-    File kraken_report = "Kraken_output/~{tag}.kreport2"
+    File kraken_report = "Kraken_output/~{tag}.txt"
     File kraken_file = "Kraken_output/~{tag}.kraken_output"
     File krona_in = "Kraken_output/krona_input.txt"
     File kraken_json = "~{tag}_kraken.json"
