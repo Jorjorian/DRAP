@@ -1,49 +1,7 @@
 {
-  "dropped_read_groups": [
-    {
-      "left": "sample1",
-      "right": [
-        {
-          "left": "/home/alex/Downloads/test_fastqs/raw_fastqs/SID0002_S1_R1_001.FS10002271.fastq.gz",
-          "right": "/home/alex/Downloads/test_fastqs/raw_fastqs/SID0002_S1_R2_001.FS10002271.fastq.gz"
-        },
-        {
-          "left": "/home/alex/Downloads/test_fastqs/raw_fastqs/SID0003_S2_R1_001.FS10002271.fastq.gz",
-          "right": "/home/alex/Downloads/test_fastqs/raw_fastqs/SID0003_S2_R2_001.FS10002271.fastq.gz"
-        }
-      ]
-    },
-    {
-      "left": "sample2",
-      "right": [
-        {
-          "left": "/home/alex/Downloads/test_fastqs/raw_fastqs/SID0005_S3_R1_001.FS10002271.fastq.gz",
-          "right": "/home/alex/Downloads/test_fastqs/raw_fastqs/SID0005_S3_R2_001.FS10002271.fastq.gz"
-        },
-        {
-          "left": "/home/alex/Downloads/test_fastqs/raw_fastqs/SID0006_S4_R1_001.FS10002271.fastq.gz",
-          "right": "/home/alex/Downloads/test_fastqs/raw_fastqs/SID0006_S4_R2_001.FS10002271.fastq.gz"
-        },
-        {
-          "left": "/home/alex/Downloads/test_fastqs/raw_fastqs/SID0007_S5_R1_001.FS10002271.fastq.gz",
-          "right": "/home/alex/Downloads/test_fastqs/raw_fastqs/SID0007_S5_R2_001.FS10002271.fastq.gz"
-        }
-      ]
-    },
-    {
-      "left": "sample3",
-      "right": [
-        {
-          "left": "/home/alex/Downloads/test_fastqs/raw_fastqs/SID0008_S6_R1_001.FS10002271.fastq.gz",
-          "right": "/home/alex/Downloads/test_fastqs/raw_fastqs/SID0008_S6_R2_001.FS10002271.fastq.gz"
-        },
-        {
-          "left": "/home/alex/Downloads/test_fastqs/raw_fastqs/SID0010_S7_R1_001.FS10002271.fastq.gz",
-          "right": "/home/alex/Downloads/test_fastqs/raw_fastqs/SID0010_S7_R2_001.FS10002271.fastq.gz"
-        }
-      ]
-    }
-  ],
+  "run_name": "",
+  "input_zip": "",
+  "groups": ["unmapped","filtered", "Undetermined"],
   "reference_fasta" : "/home/alex/DataspellProjects/DRAP/Resources/SARS-CoV-2.reference.fasta",
   "kraken_tar": "/home/alex/Downloads/k2_pluspf_16gb_20240605.tar.gz",
   "adapter_list": "/home/alex/DataspellProjects/DRAP/Resources/adapters.fa",

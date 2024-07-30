@@ -167,6 +167,8 @@ task combine_images {
 }
 
 command <<<
+    source activate base
+    conda activate myenv
     python <<CODE
 import math
 import matplotlib.pyplot as plt
@@ -203,11 +205,11 @@ def combine_images(image_files, output_image):
     combined_image.save(output_image)
 
     # Input images and output image name
-    image_files = "~{sep=' ' images}".split(' ')
-    output_image = "~{output_image_name}"
+image_files = "~{sep=' ' images}".split(' ')
+output_image = "~{output_image_name}"
 
-    combine_images(image_files, output_image)
-    CODE
+combine_images(image_files, output_image)
+CODE
 >>>
 
 output {
@@ -215,6 +217,6 @@ output {
         }
 
 runtime {
-  docker: "python:3.8-slim"
+  docker: "docker.io/oblivious1/drap:flowcell"
   memory: "4 GB"}
 }

@@ -8,7 +8,7 @@ task runKraken {
     File Kraken2_tar
     String kraken2_db = "kraken2_db"
     Int memory = 31
-    Int cpu = 4
+    Int cpu = 14
   }
   command <<<
     ls ~{kraken2_db}
@@ -47,6 +47,7 @@ task runKraken {
     with open("~{tag}_kraken.json", "w") as OUT:
         json.dump(H, OUT)
     CODE
+    rm -r ~{kraken2_db}
 
   >>>
   output {
