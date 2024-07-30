@@ -45,20 +45,25 @@ def plot_xy(x_coords_1, y_coords_1, tag):
 
 def cluster_and_plot(x_coords, y_coords, tag):
     coords = np.column_stack((x_coords, y_coords))
-    db = DBSCAN(eps=3, min_samples=10).fit(coords)
-    labels = db.labels_
-
-    unique_labels = set(labels)
-    colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, len(unique_labels))]
-
     plt.figure(figsize=(10, 6))
-    for k, col in zip(unique_labels, colors):
-        if k == -1:
-            col = [0, 0, 0, 1]
-        class_member_mask = (labels == k)
-        xy = coords[class_member_mask]
-        plt.scatter(xy[:, 0], xy[:, 1], s=.001, alpha=0.5, color=tuple(col))
+    labels =[]
+    unique_labels = []
+    try:
+        db = DBSCAN(eps=3, min_samples=10).fit(coords)
+        labels = db.labels_
 
+        unique_labels = set(labels)
+        colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, len(unique_labels))]
+
+
+        for k, col in zip(unique_labels, colors):
+            if k == -1:
+                col = [0, 0, 0, 1]
+            class_member_mask = (labels == k)
+            xy = coords[class_member_mask]
+            plt.scatter(xy[:, 0], xy[:, 1], s=.001, alpha=0.5, color=tuple(col))
+    except Exception as e:
+        print(e)
     plt.title(tag + " - Clustered Distribution")
     plt.xlabel("X coordinate")
     plt.ylabel("Y coordinate")
