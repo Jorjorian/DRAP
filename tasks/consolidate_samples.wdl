@@ -2,38 +2,39 @@ version development
 
 task consolidate_samples {
     input {
-        Array[Pair[String, Array[Pair[File, File]]]] dropped_read_groups
+        File zip_file
+        Array[String] group_on
+        File? default_reference
     }
-
-    # Convert the dropped_read_groups to a JSON string
-    File dropped_read_groups_json = write_json(dropped_read_groups)
 
     command <<<
         set -e  # Exit on error
 
-        mkdir -p output_fastqs
+        OUTPUT_DIR=$(pwd)/output_fastqs
+        mkdir -p ${OUTPUT_DIR}
+        unzip ~{zip_file} -d extracted_contents
+        cd $(find extracted_contents -type d | sort | tail -n 1)
+        for group in ~{sep=' ' group_on}; do
+        R1_files=$(find . \( -name "*${group}*R1*.fastq.gz" -o -name "*${group}*1.fq.gz" \) | tr '\n' ' ')
+        R2_files=$(find . \( -name "*${group}*R2*.fastq.gz" -o -name "*${group}*2.fq.gz" \) | tr '\n' ' ')
 
-        # Write the dropped_read_groups JSON string to a file safely
-        cp ~{dropped_read_groups_json} dropped_read_groups.json
+            # Concatenate the fastq files
+            cat ${R1_files} > ${OUTPUT_DIR}/${group}_R1.fastq.gz
+            cat ${R2_files} > ${OUTPUT_DIR}/${group}_R2.fastq.gz
 
-        # Process the JSON file to consolidate samples
-        jq -c '.[]' dropped_read_groups.json | while read pair; do
-        name=$(echo ${pair} | jq -r '.left')
-        files=$(echo ${pair} | jq -c '.right')
+            # Save the group name to the names.txt file
+        done
+        ls ${OUTPUT_DIR}/*_R1.fastq.gz | sed 's/.*\///' | sed 's/_R1.fastq.gz//' > ${OUTPUT_DIR}/names.txt
 
-        # Extract R1 and R2 files
-        R1_files=$(echo ${files} | jq -r '.[] | .left' | tr '\n' ' ')
-        echo ${R1_files}
+        # Concatenate any fasta files
+        if [ -n "~{default_reference}" ]; then
+            cp ~{default_reference} ${OUTPUT_DIR}/combined.fasta
+        else
+            touch ${OUTPUT_DIR}/combined.fasta
+        fi
 
-        R2_files=$(echo ${files} | jq -r '.[] | .right' | tr '\n' ' ')
-        echo ${R2_files}
-
-        # Concatenate the files into the output directory
-        cat ${R1_files} > output_fastqs/${name}_R1.fastq.gz
-        cat ${R2_files} > output_fastqs/${name}_R2.fastq.gz
-
-        # Save the name to the names.txt file
-        echo "${name}" >> output_fastqs/names.txt
+        for fasta_file in $(find . -name "*.fasta"); do
+            cat ${fasta_file} >> ${OUTPUT_DIR}/combined.fasta
         done
     >>>
 
@@ -41,6 +42,7 @@ task consolidate_samples {
         Array[File] R1_files = glob("output_fastqs/*_R1.fastq.gz")
         Array[File] R2_files = glob("output_fastqs/*_R2.fastq.gz")
         Array[String] names = read_lines("output_fastqs/names.txt")
+        File reference = "output_fastqs/combined.fasta"
 
         Array[Pair[File, File]] fastq_pairs = zip(R1_files, R2_files)
         Array[Pair[String, Pair[File, File]]] output_fastq_pairs = zip(names, fastq_pairs)

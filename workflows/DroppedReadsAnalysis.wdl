@@ -12,8 +12,10 @@ import "../tasks/bwa.wdl" as bwa
 workflow DRAP {
 
   input {
-      Array[Pair[String, Array[Pair[File, File]]]] dropped_read_groups
+      String run_name
+      File input_zip
       File kraken_tar
+      Array[String] groups
       File reference_fasta
       File multiqc_config
       File? primer_list
@@ -22,7 +24,9 @@ workflow DRAP {
 
   call consolidate_samples.consolidate_samples as consolidate_samples {
       input:
-          dropped_read_groups = dropped_read_groups
+          zip_file = input_zip,
+          group_on= groups,
+          default_reference = reference_fasta,
   }
   call utils.fastaIndex as ref {
         input:
@@ -84,16 +88,26 @@ workflow DRAP {
         input:
             flowcell_metrics_files = flowcell_metrics.metrics
     }
+    call flowcell_metrics.combine_images as cluster_image {
+        input:
+            images = flowcell_metrics.clusters,
+            output_image_name = 'all_clusters.png'
+    }
+    call flowcell_metrics.combine_images as overall_image {
+        input:
+            images = flowcell_metrics.overall_png,
+            output_image_name = 'all_flowcell_distribution.png'
+    }
     call multiQC.multiQC as multiQC {
         input:
             misc_file_arrays = [loose_mapping.stats, loose_mapping.bam_json, loose_mapping.depth,
-                                dimer_metrics.dimer_metrics_json, flowcell_metrics.metrics, flowcell_metrics.overall_png,
-                                flowcell_metrics.clusters, contamination_kraken.kraken_report,
+                                dimer_metrics.dimer_metrics_json, flowcell_metrics.metrics, overall_image.combined_image,
+                                cluster_image.combined_image, contamination_kraken.kraken_report,
                                 contamination_kraken.kraken_file, r1_fastqc.html, r1_fastqc.zip, r2_fastqc.html,
-                                r2_fastqc.zip],
+                                r2_fastqc.zip, loose_mapping.insert_size_metrics],
             misc_files = [consolidate_flowcell_metrics.multiqc_flowcell_metrics_json,
                           combine_dimer_metrics.multiqc_dimer_metrics_json],
-            name = 'multiqc',
+            name = run_name,
             config_file = multiqc_config
     }
     output {

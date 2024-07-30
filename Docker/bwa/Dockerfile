@@ -13,10 +13,13 @@ SHELL ["conda", "run", "-n", "bwa_env", "/bin/bash", "-c"]
 
 # Install additional tools within the environment
 RUN conda install -n bwa_env -c bioconda bwa samtools datamash
-RUN conda install -n bwa_env -c conda-forge pandas bc maven
+RUN conda install -n bwa_env -c conda-forge pandas bc
 
-# Activate the environment
+# Install Picard
+RUN conda install -n bwa_env -c bioconda picard
 
+# Activate the environment by default
+SHELL ["conda", "run", "-n", "bwa_env", "/bin/bash", "-c"]
 
 # Set the entrypoint
 CMD ["bash"]
