@@ -24,6 +24,11 @@ for zip_file in $(ls -S "$ZIP_DIR"/*.zip); do
 
     # Create an output directory named after the zip file
     OUTPUT_DIR="$zip_basename"
+    # if output directory already exist then skip the processing
+    if [ -d "$OUTPUT_DIR" ]; then
+        echo "Output directory already exists, skipping..."
+        continue
+    fi
     mkdir -p "$OUTPUT_DIR"
 
     # Create a new JSON file for this zip file
@@ -35,6 +40,7 @@ for zip_file in $(ls -S "$ZIP_DIR"/*.zip); do
        "$TEMPLATE_JSON" > "$JSON_FILE"
 
     # Run miniwdl with the WDL file and the generated JSON file
+    echo "Running miniwdl... on $zip_file"
     miniwdl run --no-quant-check "$WDL_FILE" --input "$JSON_FILE" -d "$OUTPUT_DIR"
 
 done

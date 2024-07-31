@@ -26,21 +26,27 @@ task dimer_metrics {
 
         python <<CODE
 import json
-
+import os
 dimer_counts = {}
-with open("~{tag}_output/~{tag}.bbmap.stats") as f:
-    for line in f:
-        if line.startswith("#"):
-            continue
-        adapter, count, perc = line.strip().split()
-        dimer_counts[adapter] = {"count": int(count), "percentage": float(perc.strip("%"))}
+if os.path.exists("~{tag}_output/~{tag}.bbmap.stats"):
+    with open("~{tag}_output/~{tag}.bbmap.stats") as f:
+        for line in f:
+            if line.startswith("#"):
+                continue
+            adapter, count, perc = line.strip().split()
+            dimer_counts[adapter] = {"count": int(count), "percentage": float(perc.strip("%"))}
+else:
+    dimer_counts = {}
 
 with open('~{tag}_dimer_metrics.json', 'w') as f:
     json.dump(dimer_counts, f, indent=4)
 # strip first 3 lines from stats file
-with open("~{tag}_output/~{tag}.bbmap.stats") as f:
-    lines = f.readlines()
-    lines = lines[3:]
+if os.path.exists("~{tag}_output/~{tag}.bbmap.stats"):
+    with open("~{tag}_output/~{tag}.bbmap.stats") as f:
+        lines = f.readlines()
+        lines = lines[3:]
+else:
+    lines = []
 with open("~{tag}_output/~{tag}.bbmap.stats", "w") as f:
     f.writelines(lines)
 CODE
@@ -52,7 +58,7 @@ CODE
     }
     runtime {
         memory: "10 GB"
-        cpu: 4
+        cpu: 1
         docker: "docker.io/oblivious1/drap:bbmap"
     }
 }
@@ -103,7 +109,7 @@ output {
 
 runtime {
     memory: "4 GB"
-    cpu: 2
+    cpu: 1
     docker: "python:3.8-slim"
     }
 }

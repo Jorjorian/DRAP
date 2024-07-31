@@ -51,7 +51,7 @@ task consolidate_samples {
     runtime {
         docker: "docker.io/oblivious1/drap:bash"
         memory: "4G"
-        cpu: 2
+        cpu: 1
     }
 }
 

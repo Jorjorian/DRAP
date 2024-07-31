@@ -159,7 +159,7 @@ CODE
 
     runtime {
         memory: "4 GB"
-        cpu: 2
+        cpu: 1
         docker: "python:3.8-slim"
     }
 }
