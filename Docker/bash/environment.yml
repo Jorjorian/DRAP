@@ -1,0 +1,11 @@
+name: myenv
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.10
+  - biopython
+  - matplotlib
+  - scikit-learn
+  - numpy
+  - fastq-pair

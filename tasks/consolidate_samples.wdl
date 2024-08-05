@@ -9,32 +9,50 @@ task consolidate_samples {
 
     command <<<
         set -e  # Exit on error
-
+        source activate base
+        conda activate myenv
         OUTPUT_DIR=$(pwd)/output_fastqs
         mkdir -p ${OUTPUT_DIR}
         unzip ~{zip_file} -d extracted_contents
         cd $(find extracted_contents -type d | sort | tail -n 1)
         for group in ~{sep=' ' group_on}; do
-        R1_files=$(find . \( -name "*${group}*R1*.fastq.gz" -o -name "*${group}*1.fq.gz" \) | tr '\n' ' ')
-        R2_files=$(find . \( -name "*${group}*R2*.fastq.gz" -o -name "*${group}*2.fq.gz" \) | tr '\n' ' ')
+            R1_files=$(find . \( -name "*${group}*R1*.fastq.gz" -o -name "*${group}*1.fq.gz"  -o -name "*_1.${group}.fq.gz" \) | tr '\n' ' ')
+            R2_files=$(find . \( -name "*${group}*R2*.fastq.gz" -o -name "*${group}*2.fq.gz" -o -name "*_2.${group}.fq.gz" \) | tr '\n' ' ')
 
             # Concatenate the fastq files
-            cat ${R1_files} > ${OUTPUT_DIR}/${group}_R1.fastq.gz
-            cat ${R2_files} > ${OUTPUT_DIR}/${group}_R2.fastq.gz
+            cat ${R1_files} > ${group}_R1.fastq.gz
+            cat ${R2_files} > ${group}_R2.fastq.gz
+
+            gzip -d ${group}_R1.fastq.gz
+            gzip -d ${group}_R2.fastq.gz
+
+            # Sort the files
+            fastq_pair ${group}_R1.fastq ${group}_R2.fastq
+            mv ${group}_R1.fastq.paired.fq ${group}_R1.fastq
+            mv ${group}_R2.fastq.paired.fq ${group}_R2.fastq
+
+            gzip ${group}_R1.fastq
+            gzip ${group}_R2.fastq
+            mv ${group}_R1.fastq.gz ${OUTPUT_DIR}
+            mv ${group}_R2.fastq.gz ${OUTPUT_DIR}
+
+
+            # filter out any unpaired reads and resort the files
+
 
             # Save the group name to the names.txt file
-        done
-        ls ${OUTPUT_DIR}/*_R1.fastq.gz | sed 's/.*\///' | sed 's/_R1.fastq.gz//' > ${OUTPUT_DIR}/names.txt
+            done
+            ls ${OUTPUT_DIR}/*_R1.fastq.gz | sed 's/.*\///' | sed 's/_R1.fastq.gz//' > ${OUTPUT_DIR}/names.txt
 
-        # Concatenate any fasta files
-        if [ -n "~{default_reference}" ]; then
-            cp ~{default_reference} ${OUTPUT_DIR}/combined.fasta
-        else
-            touch ${OUTPUT_DIR}/combined.fasta
-        fi
+            # Concatenate any fasta files
+            if [ -n "~{default_reference}" ]; then
+                cp ~{default_reference} ${OUTPUT_DIR}/combined.fasta
+            else
+                touch ${OUTPUT_DIR}/combined.fasta
+            fi
 
-        for fasta_file in $(find . -name "*.fasta"); do
-            cat ${fasta_file} >> ${OUTPUT_DIR}/combined.fasta
+            for fasta_file in $(find . -name "*.fasta"); do
+                cat ${fasta_file} >> ${OUTPUT_DIR}/combined.fasta
         done
     >>>
 
