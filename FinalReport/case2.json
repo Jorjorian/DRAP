@@ -1,0 +1,9 @@
+{
+  "run_name": "case2",
+  "input_zip": "project_data/RunData/Case2.zip",
+  "groups": ["unmapped","filtered", "Undetermined"],
+  "reference_fasta" : "DRAP/Resources/SARS-CoV-2.reference.fasta",
+  "kraken_tar": "project_data/Databases/k2_pluspf_16gb_20240605.tar.gz",
+  "adapter_list": "DRAP/Resources/adapters.fa",
+  "multiqc_config": "DRAP/Resources/multiqc_config.yaml"
+}
